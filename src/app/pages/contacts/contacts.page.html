@@ -1,0 +1,77 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Contactos</ion-title>
+    <ion-buttons slot="end">
+      <app-user-badge></app-user-badge>
+    </ion-buttons>
+  </ion-toolbar>
+  <ion-toolbar color="primary">
+    <ion-searchbar (ionInput)="onSearchChange($event)" placeholder="Buscar contacto..."></ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar color="primary">
+    <ion-segment [(ngModel)]="viewMode" (ionChange)="filterContacts()">
+      <ion-segment-button value="registered">
+        <ion-label>Mi Tribu</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="invite">
+        <ion-label>Invitar</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Contactos</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="refreshContacts($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <app-skeleton-loader *ngIf="isLoading" [count]="10" type="list"></app-skeleton-loader>
+
+
+  <ion-list *ngIf="!isLoading">
+    <ion-item *ngFor="let contact of displayedContacts">
+      <ion-avatar slot="start">
+        <img [src]="contact.photoURL || 'https://ionicframework.com/docs/img/demos/avatar.svg'" />
+      </ion-avatar>
+      <ion-label>
+        <h2>{{ contact.name }}</h2>
+        <p>{{ contact.phone }}</p>
+        <p *ngIf="contact.isRegistered" class="ion-text-color-success">¡Ya usa Kadotribu!</p>
+      </ion-label>
+      <ion-button slot="end" fill="clear" (click)="invite(contact)">
+        <ion-icon [name]="contact.isRegistered ? 'person-add' : 'share-social'"></ion-icon>
+      </ion-button>
+    </ion-item>
+
+    <ion-item *ngIf="contacts.length === 0" lines="none">
+      <ion-label class="ion-text-center">
+        <p>No se encontraron contactos</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <ion-infinite-scroll (ionInfinite)="loadNextPage($event)">
+    <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText="Cargando más contactos...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button (click)="addManualContact()" color="secondary">
+        <ion-icon name="create"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="importContacts()" color="tertiary">
+        <ion-icon name="people"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
+</ion-content>

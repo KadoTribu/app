@@ -1,0 +1,83 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button color="medium" (click)="cancel()">Cancelar</ion-button>
+    </ion-buttons>
+    <ion-title>Nuevo Evento</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="confirm()" [disabled]="!title" strong="true">Crear</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-list>
+    <ion-item>
+      <ion-input label="Nombre del evento" labelPlacement="floating" [(ngModel)]="title"
+        placeholder="Ej: Cumpleaños de Luis"></ion-input>
+    </ion-item>
+
+    <ion-item button="true" id="open-date-modal">
+      <ion-label>Fecha</ion-label>
+      <ion-note slot="end">{{ date | date:'mediumDate' }}</ion-note>
+    </ion-item>
+
+    <ion-modal trigger="open-date-modal" [keepContentsMounted]="true">
+      <ion-datetime presentation="date" [(ngModel)]="date"></ion-datetime>
+    </ion-modal>
+
+    <ion-item>
+      <ion-textarea label="Descripción" labelPlacement="floating" [(ngModel)]="description"
+        placeholder="Detalles extra..."></ion-textarea>
+    </ion-item>
+  </ion-list>
+
+  <ion-list>
+    <ion-list-header>
+      <ion-label>Invitar Amigos (Registrados)</ion-label>
+    </ion-list-header>
+
+    <p *ngIf="isLoadingContacts" class="ion-padding-start ion-text-muted">Cargando contactos...</p>
+
+    <div *ngIf="!isLoadingContacts && registeredContacts.length === 0" class="ion-padding">
+      <p class="ion-text-muted">No se encontraron amigos registrados.</p>
+    </div>
+
+    <ion-item *ngFor="let contact of registeredContacts">
+      <ion-avatar slot="start">
+        <img [src]="contact.photoURL || 'https://ionicframework.com/docs/img/demos/avatar.svg'" />
+      </ion-avatar>
+      <ion-label>
+        <h2>{{ contact.name }}</h2>
+        <p>{{ contact.phone }}</p>
+      </ion-label>
+      <ion-button slot="end" fill="clear" (click)="toggleHonoree(contact.uid!)">
+        <ion-icon name="heart" [color]="selectedHonoreeUids.includes(contact.uid!) ? 'danger' : 'medium'"></ion-icon>
+      </ion-button>
+      <ion-checkbox slot="end" [checked]="selectedContactUids.includes(contact.uid!)"
+        (ionChange)="toggleContact(contact.uid!)"></ion-checkbox>
+    </ion-item>
+  </ion-list>
+
+  <ion-list>
+    <ion-list-header>
+      <ion-label>Otros Contactos (Invitados)</ion-label>
+    </ion-list-header>
+
+    <div *ngIf="!isLoadingContacts && guestContacts.length === 0" class="ion-padding">
+      <p class="ion-text-muted">No se encontraron más contactos.</p>
+    </div>
+
+    <ion-item *ngFor="let contact of guestContacts">
+      <ion-avatar slot="start">
+        <ion-icon name="person" style="font-size: 24px;"></ion-icon>
+      </ion-avatar>
+      <ion-label>
+        <h2>{{ contact.name }}</h2>
+        <p>{{ contact.phone }}</p>
+      </ion-label>
+      <ion-checkbox slot="end" [checked]="selectedGuestPhones.includes(contact.phone)"
+        (ionChange)="toggleGuest(contact.phone)"></ion-checkbox>
+    </ion-item>
+  </ion-list>
+</ion-content>

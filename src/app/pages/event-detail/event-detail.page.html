@@ -1,0 +1,98 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title *ngIf="event$ | async as event">{{ event.title }}</ion-title>
+    <ion-buttons slot="end">
+      <ng-container *ngIf="event$ | async as event">
+        <ion-button (click)="viewDebts(event.id!)">
+          <ion-icon slot="icon-only" name="wallet"></ion-icon>
+        </ion-button>
+        <ion-button *ngIf="event.organizerId === currentUserUid" (click)="deleteEventUi(event)" color="danger">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-button>
+      </ng-container>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div *ngIf="event$ | async as event" class="ion-padding">
+    <h1>{{ event.title }}</h1>
+    <p>{{ event.description }}</p>
+    <p class="ion-text-muted">{{ event.date?.toDate() | date:'fullDate' }}</p>
+  </div>
+
+  <ng-container *ngIf="event$ | async as event">
+    <ng-container *ngIf="!event.honoreeIds?.includes(currentUserUid || ''); else surpriseTemplate">
+      <ion-list>
+        <ion-list-header>
+          <ion-label>Lista de Regalos</ion-label>
+        </ion-list-header>
+
+        <ng-container *ngIf="gifts$ | async as gifts">
+          <ion-item *ngFor="let gift of gifts">
+            <ion-icon name="gift" slot="start" color="primary"></ion-icon>
+            <ion-label class="ion-text-wrap">
+              <h2>{{ gift.title }}</h2>
+              <p *ngIf="gift.price">{{ gift.price | currency:'EUR' }}</p>
+
+              <div *ngIf="gift.origin === 'wishlist'">
+                <ion-chip color="warning" outline="true">
+                  <ion-icon name="star"></ion-icon>
+                  <ion-label>Deseo de {{ getContactName(gift.originalOwnerId!) }}</ion-label>
+                </ion-chip>
+              </div>
+
+              <div *ngIf="gift.purchaseType === 'group'">
+                <ion-chip color="tertiary">
+                  <ion-icon name="people"></ion-icon>
+                  <ion-label>Grupo: {{gift.groupParticipants?.length}}</ion-label>
+                </ion-chip>
+                <p class="ion-text-color-primary" style="font-size: 0.8em">
+                  Pagado por: {{ gift.payerId === currentUserUid ? 'Ti' : 'Compañero' }}
+                </p>
+              </div>
+
+              <p *ngIf="gift.assignedTo === currentUserUid && gift.purchaseType !== 'group'"
+                class="ion-text-color-success">Reservado por ti</p>
+              <p *ngIf="gift.assignedTo && gift.assignedTo !== currentUserUid && gift.assignedTo !== 'GROUP'"
+                class="ion-text-color-danger">Reservado</p>
+            </ion-label>
+
+            <!-- Individual Reservation -->
+            <ion-checkbox slot="end" *ngIf="!gift.assignedTo || gift.assignedTo === currentUserUid"
+              [checked]="gift.assignedTo === currentUserUid" (ionChange)="toggleReservation(gift)"></ion-checkbox>
+
+            <!-- Group Gift Action -->
+            <ion-button slot="end" size="small" fill="outline" *ngIf="!gift.assignedTo"
+              (click)="startGroupGift(gift, event)">
+              <ion-icon name="people"></ion-icon>
+            </ion-button>
+          </ion-item>
+
+          <ion-item *ngIf="gifts.length === 0">
+            <ion-label>No hay regalos sugeridos aún.</ion-label>
+          </ion-item>
+        </ng-container>
+      </ion-list>
+    </ng-container>
+
+    <ng-template #surpriseTemplate>
+      <div class="ion-padding ion-text-center">
+        <br><br>
+        <ion-icon name="gift" style="font-size: 64px;" color="secondary"></ion-icon>
+        <h2>¡Es una sorpresa! 🤫</h2>
+        <p>Como eres el homenajeado, no puedes ver la lista de regalos.</p>
+      </div>
+    </ng-template>
+  </ng-container>
+  <ng-container *ngIf="event$ | async as event">
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="event.organizerId === currentUserUid">
+      <ion-fab-button (click)="addGift()">
+        <ion-icon name="add"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>
+  </ng-container>
+</ion-content>

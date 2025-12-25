@@ -1,0 +1,30 @@
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 20px;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: rgba(var(--ion-color-light-rgb), 0.1);
+    }
+
+    .user-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--ion-color-dark);
+
+        // Hide name on very small screens if needed, but flex wrap handles it
+        @media (max-width: 340px) {
+            display: none;
+        }
+    }
+
+    ion-avatar {
+        width: 32px;
+        height: 32px;
+        border: 2px solid var(--ion-color-primary);
+    }
+}

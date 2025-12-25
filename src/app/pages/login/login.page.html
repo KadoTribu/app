@@ -1,0 +1,15 @@
+<ion-content [fullscreen]="true" class="ion-padding ion-text-center">
+  <div class="login-container">
+    <img src="assets/images/logo.png" alt="Kadotribu Logo" class="logo" />
+    <h1 class="ion-margin-bottom">Bienvenido a Kadotribu</h1>
+    <p class="ion-text-muted ion-margin-bottom">Gestiona tus eventos, regalos y deudas con amigos.</p>
+
+    <div class="ion-margin-top">
+      <ion-button expand="block" (click)="loginGoogle()" [disabled]="isLoading">
+        <ion-icon slot="start" name="logo-google"></ion-icon>
+        <span *ngIf="!isLoading">Continuar con Google</span>
+        <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

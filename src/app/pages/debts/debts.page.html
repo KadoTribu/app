@@ -1,0 +1,61 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>Cuentas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="ion-padding-vertical">
+    <ion-segment [(ngModel)]="viewMode">
+      <ion-segment-button value="pay">
+        <ion-label>Mis Deudas</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="receive">
+        <ion-label>A Cobrar</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <!-- DEBTS TO PAY -->
+  <ion-list *ngIf="viewMode === 'pay'">
+    <ng-container *ngIf="debtsToPay$ | async as debts">
+      <div *ngIf="debts.length === 0" class="ion-text-center ion-padding">
+        <p class="ion-text-muted">No tienes deudas pendientes.</p>
+        <ion-icon name="checkmark-circle" color="success" size="large"></ion-icon>
+      </div>
+
+      <ion-item *ngFor="let debt of debts">
+        <ion-icon slot="start" name="cash" color="danger"></ion-icon>
+        <ion-label>
+          <h2>{{ debt.giftTitle }}</h2>
+          <p>Debes a {{ getContactName(debt.toUid) }}</p>
+          <ion-note color="danger">{{ debt.amount | currency:'EUR' }}</ion-note>
+        </ion-label>
+      </ion-item>
+    </ng-container>
+  </ion-list>
+
+  <!-- DEBTS TO RECEIVE -->
+  <ion-list *ngIf="viewMode === 'receive'">
+    <ng-container *ngIf="debtsToReceive$ | async as debts">
+      <div *ngIf="debts.length === 0" class="ion-text-center ion-padding">
+        <p class="ion-text-muted">Nadie te debe dinero.</p>
+      </div>
+
+      <ion-item *ngFor="let debt of debts">
+        <ion-icon slot="start" name="cash" color="success"></ion-icon>
+        <ion-label>
+          <h2>{{ debt.giftTitle }}</h2>
+          <p>{{ getContactName(debt.fromUid) }} te debe</p>
+          <ion-note color="success">{{ debt.amount | currency:'EUR' }}</ion-note>
+        </ion-label>
+        <ion-button slot="end" fill="outline" size="small" (click)="markAsPaid(debt)">
+          Pagado
+        </ion-button>
+      </ion-item>
+    </ng-container>
+  </ion-list>
+</ion-content>

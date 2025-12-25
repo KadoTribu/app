@@ -1,0 +1,6 @@
+<div class="user-badge" *ngIf="user$ | async as user" (click)="goToProfile()">
+  <span class="user-name">{{ user.displayName }}</span>
+  <ion-avatar>
+    <img [src]="user.photoURL || 'https://ionicframework.com/docs/img/demos/avatar.svg'" />
+  </ion-avatar>
+</div>

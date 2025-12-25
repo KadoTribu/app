@@ -1,20 +1,62 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
     <ion-title>
-      Blank
+      Eventos Activos
     </ion-title>
+    <ion-buttons slot="end">
+      <app-user-badge></app-user-badge>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
+      <ion-title size="large">Eventos</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+  <ion-grid class="ion-no-padding">
+    <ion-row>
+      <ng-container *ngIf="events$ | async as events; else loading">
+        <ion-col size="12" size-md="6" size-lg="4" *ngFor="let event of events">
+          <ion-card button (click)="openEvent(event.id!)">
+            <img *ngIf="event.imageUrl" [src]="event.imageUrl" />
+            <div *ngIf="!event.imageUrl" class="event-placeholder">
+              <ion-icon name="calendar" size="large"></ion-icon>
+            </div>
+            <ion-card-header>
+              <ion-card-subtitle>{{ event.date?.toDate() | date:'mediumDate' }}</ion-card-subtitle>
+              <ion-card-title>{{ event.title }}</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              {{ event.description || 'Sin descripción' }}
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+
+        <ion-col size="12" *ngIf="events.length === 0">
+          <div class="ion-text-center ion-padding">
+            <p>No tienes eventos activos.</p>
+            <p>¡Crea uno para empezar!</p>
+          </div>
+        </ion-col>
+      </ng-container>
+
+      <ng-template #loading>
+        <ion-col size="12" size-md="6" size-lg="4" *ngFor="let i of [1,2,3]">
+          <app-skeleton-loader type="card" [count]="1"></app-skeleton-loader>
+        </ion-col>
+      </ng-template>
+    </ion-row>
+  </ion-grid>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="createEvent()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

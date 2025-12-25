@@ -1,0 +1,24 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Completa tu Perfil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="ion-text-center ion-margin-bottom">
+    <p>Para que tus amigos puedan encontrarte, necesitamos tu número de teléfono.</p>
+  </div>
+
+  <ion-item fill="outline" class="ion-margin-bottom">
+    <ion-label position="floating">Teléfono Móvil</ion-label>
+    <ion-input type="tel" [(ngModel)]="phoneNumber" placeholder="+34 600 000 000"></ion-input>
+  </ion-item>
+  <ion-note color="medium" class="ion-padding-bottom">
+    Este número será usado únicamente para identificarte entre tus contactos.
+  </ion-note>
+
+  <ion-button expand="block" (click)="savePhone()" [disabled]="isLoading || phoneNumber.length < 9"
+    class="ion-margin-top">
+    Guardar y Continuar
+  </ion-button>
+</ion-content>
