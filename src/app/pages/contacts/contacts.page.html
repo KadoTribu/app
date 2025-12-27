@@ -44,6 +44,9 @@
         <p>{{ contact.phone }}</p>
         <p *ngIf="contact.isRegistered" class="ion-text-color-success">¡Ya usa Kadotribu!</p>
       </ion-label>
+      <ion-button slot="end" fill="clear" (click)="editContact(contact)">
+        <ion-icon name="create-outline"></ion-icon>
+      </ion-button>
       <ion-button slot="end" fill="clear" (click)="invite(contact)">
         <ion-icon [name]="contact.isRegistered ? 'person-add' : 'share-social'"></ion-icon>
       </ion-button>

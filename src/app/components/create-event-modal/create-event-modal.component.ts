@@ -1,8 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonItem, IonLabel, IonInput, IonTextarea, IonDatetime, IonDatetimeButton, IonModal, IonList, IonListHeader, IonAvatar, IonCheckbox, ModalController, IonIcon, IonNote } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonItem, IonLabel, IonInput, IonTextarea, IonDatetime, IonDatetimeButton, IonModal, IonPopover, IonList, IonListHeader, IonAvatar, IonCheckbox, ModalController, IonIcon, IonNote } from '@ionic/angular/standalone';
 import { ContactsService, AppContact } from '../../services/contacts.service';
+import { TribuEvent } from '../../services/events.service';
 import { addIcons } from 'ionicons';
 import { person, heart } from 'ionicons/icons';
 
@@ -11,15 +12,19 @@ import { person, heart } from 'ionicons/icons';
   templateUrl: './create-event-modal.component.html',
   styleUrls: ['./create-event-modal.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonItem, IonLabel, IonInput, IonTextarea, IonDatetime, IonDatetimeButton, IonModal, IonList, IonListHeader, IonAvatar, IonCheckbox, IonIcon, IonNote]
+  imports: [CommonModule, FormsModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonItem, IonLabel, IonInput, IonTextarea, IonDatetime, IonDatetimeButton, IonModal, IonPopover, IonList, IonListHeader, IonAvatar, IonCheckbox, IonIcon, IonNote]
 })
 export class CreateEventModalComponent implements OnInit {
   private modalCtrl = inject(ModalController);
   private contactsService = inject(ContactsService);
 
+  @Input() event?: TribuEvent; // For editing
+
   title = '';
   description = '';
   date = new Date().toISOString();
+  locationName = '';
+  // googleMapsLink removed as it is auto-generated
 
   registeredContacts: AppContact[] = [];
   guestContacts: AppContact[] = [];
@@ -36,6 +41,23 @@ export class CreateEventModalComponent implements OnInit {
 
   async ngOnInit() {
     this.isLoadingContacts = true;
+
+    // Initialize if editing
+    if (this.event) {
+      this.title = this.event.title;
+      this.description = this.event.description || '';
+      this.date = this.event.date && this.event.date.seconds ? new Date(this.event.date.seconds * 1000).toISOString() : new Date().toISOString();
+      this.locationName = this.event.locationName || '';
+      // We don't need to load googleMapsLink as we generate it, or we could preserve it if passed.
+      // But requirement says "auto generate", so we regenerate on save.
+
+      this.selectedContactUids = this.event.participantIds || [];
+      this.selectedHonoreeUids = this.event.honoreeIds || [];
+      // Guests mapping is tricky to pre-fill back to checkboxes if we don't store their source, 
+      // but for now we won't pre-select guests on edit to avoid duplication or complexity.
+      // Or we could tries to match by name/phone.
+    }
+
     try {
       const allContacts = await this.contactsService.getAllContacts();
 
@@ -46,7 +68,6 @@ export class CreateEventModalComponent implements OnInit {
       console.error('Error loading contacts for event modal', e);
     } finally {
       this.isLoadingContacts = false;
-      console.log('Contacts loading finished', { registered: this.registeredContacts.length, guests: this.guestContacts.length });
     }
   }
 
@@ -57,10 +78,18 @@ export class CreateEventModalComponent implements OnInit {
   confirm() {
     const guests = this.guestContacts.filter(c => this.selectedGuestPhones.includes(c.phone));
 
+    // Auto-generate Google Maps Link
+    let generatedLink = '';
+    if (this.locationName) {
+      generatedLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.locationName)}`;
+    }
+
     this.modalCtrl.dismiss({
       title: this.title,
       description: this.description,
-      date: this.date,
+      date: this.date, // ISO string
+      locationName: this.locationName,
+      googleMapsLink: generatedLink,
       participantIds: this.selectedContactUids,
       honoreeIds: this.selectedHonoreeUids,
       guests: guests.map(c => ({ name: c.name, phone: c.phone }))

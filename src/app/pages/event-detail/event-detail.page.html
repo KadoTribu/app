@@ -9,6 +9,12 @@
         <ion-button (click)="viewDebts(event.id!)">
           <ion-icon slot="icon-only" name="wallet"></ion-icon>
         </ion-button>
+        <ion-button *ngIf="event.organizerId === currentUserUid" (click)="editEvent(event)">
+          <ion-icon slot="icon-only" name="create"></ion-icon>
+        </ion-button>
+        <ion-button *ngIf="event.organizerId === currentUserUid" (click)="inviteGuestsUi(event)">
+          <ion-icon slot="icon-only" name="person-add"></ion-icon>
+        </ion-button>
         <ion-button *ngIf="event.organizerId === currentUserUid" (click)="deleteEventUi(event)" color="danger">
           <ion-icon slot="icon-only" name="trash"></ion-icon>
         </ion-button>
@@ -18,17 +24,85 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <div *ngIf="event$ | async as event" class="ion-padding">
-    <h1>{{ event.title }}</h1>
-    <p>{{ event.description }}</p>
-    <p class="ion-text-muted">{{ event.date?.toDate() | date:'fullDate' }}</p>
+  <div *ngIf="event$ | async as event" class="ion-padding-bottom">
+    <div class="ion-padding">
+      <h1>{{ event.title }}</h1>
+      <p class="ion-text-muted" *ngIf="event.description">{{ event.description }}</p>
+    </div>
+
+    <ion-list lines="full">
+      <ion-item>
+        <ion-icon name="calendar-outline" slot="start" color="primary"></ion-icon>
+        <ion-label>
+          <h3>Fecha y Hora</h3>
+          <p>{{ event.date?.toDate() | date:'fullDate' }}</p>
+          <p>{{ event.date?.toDate() | date:'shortTime' }}</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item *ngIf="event.locationName" [href]="event.googleMapsLink"
+        [target]="event.googleMapsLink ? '_blank' : undefined" [detail]="!!event.googleMapsLink"
+        [button]="!!event.googleMapsLink">
+        <ion-icon name="location-outline" slot="start" color="secondary"></ion-icon>
+        <ion-label class="ion-text-wrap">
+          <h3>Ubicación</h3>
+          <p>{{ event.locationName }}</p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+  </div>
+
+  <div *ngIf="displayParticipants.length > 0" class="ion-padding-horizontal">
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Invitados ({{displayParticipants.length}})</ion-label>
+      </ion-list-header>
+      <ion-item *ngFor="let p of displayParticipants">
+        <ion-avatar slot="start">
+          <img [src]="p.photoURL || 'https://ionicframework.com/docs/img/demos/avatar.svg'" />
+        </ion-avatar>
+        <ion-label>
+          <h3>{{ p.name }}</h3>
+          <p *ngIf="p.status === 'accepted'" class="ion-text-color-success">Confirmado</p>
+          <p *ngIf="p.status === 'pending'" class="ion-text-color-medium">Pendiente</p>
+          <p *ngIf="p.status === 'rejected'" class="ion-text-color-danger">No asistirá</p>
+        </ion-label>
+        <ion-icon [name]="getStatusIcon(p.status)" [color]="getStatusColor(p.status)" slot="end"></ion-icon>
+      </ion-item>
+    </ion-list>
   </div>
 
   <ng-container *ngIf="event$ | async as event">
+
     <ng-container *ngIf="!event.honoreeIds?.includes(currentUserUid || ''); else surpriseTemplate">
+
+      <!-- GIFT GROUPS (BOTES) -->
       <ion-list>
         <ion-list-header>
-          <ion-label>Lista de Regalos</ion-label>
+          <ion-label>Grupos de Regalo</ion-label>
+          <ion-button size="small" (click)="createGroupUi()">Crear</ion-button>
+        </ion-list-header>
+
+        <ng-container *ngIf="giftGroups$ | async as groups">
+          <ion-item *ngFor="let group of groups" button (click)="openGroup(group)">
+            <ion-icon name="people" slot="start" color="tertiary"></ion-icon>
+            <ion-label>
+              <h2>{{ group.name }}</h2>
+              <p>Participantes: {{ group.memberIds.length }}</p>
+            </ion-label>
+            <ion-icon *ngIf="group.isClosed" name="lock-closed" slot="end" color="medium"></ion-icon>
+          </ion-item>
+          <ion-item *ngIf="groups.length === 0">
+            <ion-label class="ion-text-wrap" color="medium">
+              <p>Crea un grupo para comprar regalos entre varios.</p>
+            </ion-label>
+          </ion-item>
+        </ng-container>
+      </ion-list>
+
+      <ion-list>
+        <ion-list-header>
+          <ion-label>Lista de Regalos (Ideas Individuales)</ion-label>
         </ion-list-header>
 
         <ng-container *ngIf="gifts$ | async as gifts">
@@ -48,7 +122,7 @@
               <div *ngIf="gift.purchaseType === 'group'">
                 <ion-chip color="tertiary">
                   <ion-icon name="people"></ion-icon>
-                  <ion-label>Grupo: {{gift.groupParticipants?.length}}</ion-label>
+                  <ion-label>{{ getGroupName(gift.groupId!) }}</ion-label>
                 </ion-chip>
                 <p class="ion-text-color-primary" style="font-size: 0.8em">
                   Pagado por: {{ gift.payerId === currentUserUid ? 'Ti' : 'Compañero' }}
@@ -59,17 +133,16 @@
                 class="ion-text-color-success">Reservado por ti</p>
               <p *ngIf="gift.assignedTo && gift.assignedTo !== currentUserUid && gift.assignedTo !== 'GROUP'"
                 class="ion-text-color-danger">Reservado</p>
+              <p *ngIf="gift.assignedTo === 'GROUP'" class="ion-text-color-tertiary">
+                Reservado por {{ getGroupName(gift.groupId!) }}
+              </p>
             </ion-label>
 
             <!-- Individual Reservation -->
             <ion-checkbox slot="end" *ngIf="!gift.assignedTo || gift.assignedTo === currentUserUid"
               [checked]="gift.assignedTo === currentUserUid" (ionChange)="toggleReservation(gift)"></ion-checkbox>
 
-            <!-- Group Gift Action -->
-            <ion-button slot="end" size="small" fill="outline" *ngIf="!gift.assignedTo"
-              (click)="startGroupGift(gift, event)">
-              <ion-icon name="people"></ion-icon>
-            </ion-button>
+
           </ion-item>
 
           <ion-item *ngIf="gifts.length === 0">

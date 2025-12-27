@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Platform } from '@ionic/angular/standalone';
 import { Contacts } from '@capacitor-community/contacts';
-import { Firestore, docData, doc, setDoc } from '@angular/fire/firestore'; // Updated imports
+import { Firestore, docData, doc, setDoc, deleteDoc } from '@angular/fire/firestore'; // Updated imports
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Share } from '@capacitor/share';
 import { AuthService } from './auth.service';
@@ -282,6 +282,67 @@ export class ContactsService {
         appContacts.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
         return appContacts;
+    }
+
+    async updateContact(originalPhone: string, newName: string, newPhone: string, existingUid?: string) {
+        const normalizedPhone = this.normalizePhone(newPhone);
+        const currentUser = this.authService.currentUser;
+
+        // Check if the new phone belongs to a registered user
+        const q = query(collection(this.firestore, 'users'), where('phoneNumber', '==', normalizedPhone));
+        const snapshot = await getDocs(q);
+        const registeredUser = !snapshot.empty ? snapshot.docs[0].data() : null;
+
+        if (registeredUser && currentUser) {
+            // CASE 1: Contact is Registered (or became registered)
+            // Save to Firestore 'savedContacts' using their real UID
+            const targetUid = registeredUser['uid']; // Typed access
+
+            // If we are changing from one UID to another (rare, but possible), delete old
+            if (existingUid && existingUid !== targetUid) {
+                await deleteDoc(doc(this.firestore, 'users', currentUser.uid, 'savedContacts', existingUid));
+            }
+
+            const docRef = doc(this.firestore, 'users', currentUser.uid, 'savedContacts', targetUid);
+            await setDoc(docRef, {
+                name: newName,
+                phone: normalizedPhone,
+                uid: targetUid,
+                photoURL: registeredUser['photoURL'] || null,
+                isRegistered: true
+            }, { merge: true });
+
+            // Remove from manual list if it existed there
+            this.removeManualContact(originalPhone);
+
+        } else {
+            // CASE 2: Contact is NOT Registered (or lost registration status)
+            // It should be in Manual Storage.
+
+            // If it was in Firestore (existingUid), remove it from there
+            if (currentUser && existingUid) {
+                await deleteDoc(doc(this.firestore, 'users', currentUser.uid, 'savedContacts', existingUid));
+            }
+
+            // Update or Add to Manual Storage
+            const manualContacts = this.getManualContactsFromStorage();
+            const index = manualContacts.findIndex(c => c.phone === originalPhone);
+
+            if (index !== -1) {
+                manualContacts[index] = { ...manualContacts[index], name: newName, phone: normalizedPhone };
+            } else {
+                manualContacts.push({ name: newName, phone: normalizedPhone });
+            }
+            localStorage.setItem('manual_contacts', JSON.stringify(manualContacts));
+        }
+    }
+
+    private removeManualContact(phone: string) {
+        const manual = this.getManualContactsFromStorage();
+        const filtered = manual.filter(c => c.phone !== phone);
+        if (manual.length !== filtered.length) {
+            localStorage.setItem('manual_contacts', JSON.stringify(filtered));
+        }
     }
 
     async inviteContact(contact: AppContact) {

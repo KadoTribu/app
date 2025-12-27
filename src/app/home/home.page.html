@@ -19,9 +19,21 @@
     </ion-toolbar>
   </ion-header>
 
+  <!-- Pending Invitations Banner -->
+  <ion-card *ngIf="pendingCount > 0" color="warning" button (click)="openPendingInvitations()">
+    <ion-item lines="none" color="warning">
+      <ion-icon name="mail-open" slot="start" size="large"></ion-icon>
+      <ion-label>
+        <h2>Solicitudes Pendientes</h2>
+        <p>Tienes {{pendingCount}} invitaciones de evento.</p>
+      </ion-label>
+      <ion-button slot="end" fill="solid" color="dark">Ver</ion-button>
+    </ion-item>
+  </ion-card>
+
   <ion-grid class="ion-no-padding">
     <ion-row>
-      <ng-container *ngIf="events$ | async as events; else loading">
+      <ng-container *ngIf="confirmedEvents$ | async as events; else loading">
         <ion-col size="12" size-md="6" size-lg="4" *ngFor="let event of events">
           <ion-card button (click)="openEvent(event.id!)">
             <img *ngIf="event.imageUrl" [src]="event.imageUrl" />
@@ -59,4 +71,11 @@
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
+
+  <div class="ion-text-center ion-padding-bottom">
+    <ion-button fill="clear" (click)="openHistory()" size="small" color="medium">
+      <ion-icon name="time" slot="start"></ion-icon>
+      Ver eventos anteriores
+    </ion-button>
+  </div>
 </ion-content>

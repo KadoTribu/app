@@ -7,7 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { SkeletonLoaderComponent } from '../../components/skeleton-loader/skeleton-loader.component';
 import { UserBadgeComponent } from '../../components/user-badge/user-badge.component';
 import { addIcons } from 'ionicons';
-import { shareSocial, personAdd, add, create, people } from 'ionicons/icons';
+import { shareSocial, personAdd, add, create, people, createOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-contacts',
@@ -37,7 +37,7 @@ export class ContactsPage implements OnInit {
   private requestId = 0;
 
   constructor() {
-    addIcons({ shareSocial, personAdd, add, create, people });
+    addIcons({ shareSocial, personAdd, add, create, people, createOutline });
   }
 
   ngOnInit() {
@@ -149,6 +149,43 @@ export class ContactsPage implements OnInit {
 
   invite(contact: AppContact) {
     this.contactsService.inviteContact(contact);
+  }
+
+  async editContact(contact: AppContact) {
+    const alert = await this.alertCtrl.create({
+      header: 'Editar Contacto',
+      inputs: [
+        {
+          name: 'name',
+          type: 'text',
+          placeholder: 'Nombre',
+          value: contact.name
+        },
+        {
+          name: 'phone',
+          type: 'tel',
+          placeholder: 'Teléfono',
+          value: contact.phone
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Guardar',
+          handler: async (data) => {
+            if (data.name && data.phone) {
+              await this.contactsService.updateContact(contact.phone, data.name, data.phone, contact.uid);
+              // Refresh to show changes
+              this.refreshContacts({ target: { complete: () => { } } });
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   async addManualContact() {

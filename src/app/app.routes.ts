@@ -41,12 +41,17 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'debts',
+    loadComponent: () => import('./pages/debts/debts.page').then(m => m.DebtsPage),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'debts/:id', // Event ID for debts
     loadComponent: () => import('./pages/debts/debts.page').then(m => m.DebtsPage),
     canActivate: [AuthGuard]
   },
   {
     path: 'profile',
-    loadComponent: () => import('./pages/profile/profile.page').then( m => m.ProfilePage)
+    loadComponent: () => import('./pages/profile/profile.page').then(m => m.ProfilePage)
   }
 ];

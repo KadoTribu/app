@@ -14,7 +14,7 @@
     .user-name {
         font-weight: 600;
         font-size: 0.9rem;
-        color: var(--ion-color-dark);
+
 
         // Hide name on very small screens if needed, but flex wrap handles it
         @media (max-width: 340px) {

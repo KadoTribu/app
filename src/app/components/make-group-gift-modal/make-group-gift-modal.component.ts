@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonItem, IonLabel, IonCheckbox, ModalController, IonList, IonListHeader, IonAvatar, IonRadioGroup, IonRadio } from '@ionic/angular/standalone';
@@ -55,7 +55,9 @@ export class MakeGroupGiftModalComponent implements OnInit {
     private contactsService = inject(ContactsService);
 
     // Input
-    activeParticipantsUids: string[] = []; // UIDs of people in the event
+    @Input() activeParticipantsUids: string[] = []; // UIDs of people in the event
+    @Input() honoreeIds: string[] = [];
+    @Input() currentUserId: string = '';
 
     participants: AppContact[] = [];
     selectedUids: string[] = [];
@@ -66,11 +68,41 @@ export class MakeGroupGiftModalComponent implements OnInit {
     async ngOnInit() {
         // Load contacts to get names for the UIDs
         const all = await this.contactsService.getAllContacts();
-        // Filter to only those in the event
-        this.participants = all.filter(c => c.uid && this.activeParticipantsUids.includes(c.uid));
 
-        // Auto-select all by default? Or just user?
-        // Let's select all initially for convenience
+        // 1. Filter candidates: Must be active participants AND NOT honorees
+        const candidates = this.activeParticipantsUids.filter(uid => !this.honoreeIds.includes(uid));
+
+        // 2. Build participants list from contacts
+        this.participants = all.filter(c => c.uid && candidates.includes(c.uid));
+
+        // 3. Add "Me" (Current User) if appropriate
+        // If I am in the candidate list but not found in contacts (because I don't have myself as a contact), add manually.
+        // Also ensuring I'm not an honoree.
+        if (this.currentUserId && !this.honoreeIds.includes(this.currentUserId)) {
+            const amIAlreadyListed = this.participants.some(p => p.uid === this.currentUserId);
+            if (!amIAlreadyListed) {
+                // Check if I was supposed to be a candidate (i.e., I am in activeParticipantsUids)
+                // Usually the organizer is in activeParticipantsUids.
+                if (this.activeParticipantsUids.includes(this.currentUserId)) {
+                    this.participants.unshift({
+                        name: 'Yo',
+                        phone: '',
+                        uid: this.currentUserId
+                    } as AppContact);
+                }
+            } else {
+                // If I am listed (maybe I added myself to contacts?), rename to "Yo" for clarity? Optional.
+                // let's leave it as is or move to top.
+                const myIndex = this.participants.findIndex(p => p.uid === this.currentUserId);
+                if (myIndex > -1) {
+                    const myContact = this.participants.splice(myIndex, 1)[0];
+                    myContact.name = `${myContact.name} (Yo)`;
+                    this.participants.unshift(myContact);
+                }
+            }
+        }
+
+        // Auto-select all by default
         this.selectedUids = this.participants.map(p => p.uid!);
     }
 

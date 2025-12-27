@@ -1,11 +1,11 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonBackButton, IonList, IonItem, IonLabel, IonInput, IonAvatar, IonToggle, IonButton, IonIcon, IonSelect, IonSelectOption, AlertController, IonListHeader, IonItemSliding, IonItemOptions, IonItemOption } from '@ionic/angular/standalone';
+import { IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonBackButton, IonList, IonItem, IonLabel, IonInput, IonAvatar, IonToggle, IonButton, IonIcon, IonSelect, IonSelectOption, AlertController, IonListHeader, IonItemSliding, IonItemOptions, IonItemOption, IonSegment, IonSegmentButton, IonItemDivider } from '@ionic/angular/standalone';
 import { AuthService, UserProfile } from '../../services/auth.service';
 import { EventsService, Gift } from '../../services/events.service';
 import { addIcons } from 'ionicons';
-import { moon, sunny, save, add, trash, gift } from 'ionicons/icons';
+import { moon, sunny, save, add, trash, gift, create } from 'ionicons/icons';
 import { Observable, switchMap, of } from 'rxjs';
 
 @Component({
@@ -13,7 +13,7 @@ import { Observable, switchMap, of } from 'rxjs';
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonBackButton, IonList, IonItem, IonLabel, IonInput, IonAvatar, IonToggle, IonButton, IonIcon, IonSelect, IonSelectOption, IonListHeader, IonItemSliding, IonItemOptions, IonItemOption, CommonModule, FormsModule]
+  imports: [IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonBackButton, IonList, IonItem, IonLabel, IonInput, IonAvatar, IonToggle, IonButton, IonIcon, IonSelect, IonSelectOption, IonListHeader, IonItemSliding, IonItemOptions, IonItemOption, IonSegment, IonSegmentButton, IonItemDivider, CommonModule, FormsModule]
 
 })
 export class ProfilePage implements OnInit {
@@ -26,6 +26,8 @@ export class ProfilePage implements OnInit {
   displayName = '';
   avatarSeed = '';
   isDarkMode = false;
+  phoneNumber = '';
+  segmentValue = 'profile';
 
   // DiceBear Options
   hairStyle = 'shortFlat';
@@ -84,7 +86,7 @@ export class ProfilePage implements OnInit {
   ];
 
   constructor() {
-    addIcons({ moon, sunny, save, add, trash, gift });
+    addIcons({ moon, sunny, save, add, trash, gift, create });
   }
 
   ngOnInit() {
@@ -92,6 +94,8 @@ export class ProfilePage implements OnInit {
       this.user = profile;
       if (profile) {
         this.displayName = profile.displayName || '';
+        this.phoneNumber = profile.phoneNumber || '';
+
         if (profile.photoURL && profile.photoURL.includes('dicebear')) {
           try {
             const url = new URL(profile.photoURL);
@@ -176,7 +180,8 @@ export class ProfilePage implements OnInit {
     try {
       await this.authService.updateProfile(this.user.uid, {
         displayName: this.displayName,
-        photoURL: this.avatarUrl
+        photoURL: this.avatarUrl,
+        phoneNumber: this.phoneNumber
       });
       // Show toast or feedback
     } catch (error) {
@@ -230,6 +235,50 @@ export class ProfilePage implements OnInit {
   async deleteWishlistItem(gift: Gift) {
     if (!this.user || !gift.id) return;
     await this.eventsService.deleteFromWishlist(this.user.uid, gift.id);
+  }
+
+  async editWishlistItem(item: Gift) {
+    if (!this.user || !item.id) return;
+
+    const alert = await this.alertCtrl.create({
+      header: 'Editar Deseo',
+      inputs: [
+        {
+          name: 'title',
+          type: 'text',
+          placeholder: 'Título',
+          value: item.title
+        },
+        {
+          name: 'url',
+          type: 'url',
+          placeholder: 'Enlace (opcional)',
+          value: item.url
+        },
+        {
+          name: 'price',
+          type: 'number',
+          placeholder: 'Precio estimado (€)',
+          value: item.price
+        }
+      ],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Guardar',
+          handler: async (data) => {
+            if (data.title && this.user && item.id) {
+              await this.eventsService.updateWishlistItem(this.user.uid, item.id, {
+                title: data.title,
+                url: data.url,
+                price: data.price ? parseFloat(data.price) : 0
+              });
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   logout() {

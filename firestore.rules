@@ -29,24 +29,61 @@ service cloud.firestore {
 
     // Eventos
     match /eventos/{eventId} {
-      allow read: if isAuth() && request.auth.uid in resource.data.participantIds;
+      allow read: if isAuth() && (
+        request.auth.uid in resource.data.participantIds ||
+        request.auth.uid in resource.data.get('honoreeIds', [])
+      );
       allow create: if isAuth() && request.resource.data.organizerId == request.auth.uid;
-      allow update: if isAuth() && request.auth.uid in resource.data.participantIds;
+      allow update: if isAuth() && (
+        request.auth.uid in resource.data.participantIds ||
+        request.auth.uid in resource.data.get('honoreeIds', [])
+      );
       allow delete: if isAuth() && resource.data.organizerId == request.auth.uid;
+    }
+
+    // Gift Groups
+    match /gift_groups/{groupId} {
+       allow read: if isAuth() && 
+         request.auth.uid in getEvent(resource.data.eventId).data.participantIds;
+       
+       allow create: if isAuth() && 
+         request.auth.uid in getEvent(request.resource.data.eventId).data.participantIds;
+         
+       allow update: if isAuth() && 
+         request.auth.uid in getEvent(resource.data.eventId).data.participantIds;
+
+       // Delete: admin only
+       allow delete: if isAuth() && resource.data.adminId == request.auth.uid;
     }
 
     // Regalos
     match /regalos/{giftId} {
-       allow read: if isAuth() && 
-         request.auth.uid in getEvent(resource.data.eventId).data.participantIds;
+       // Read: Check owner first to avoid getEvent crash on orphans.
+       allow read: if isAuth() && (
+         resource.data.originalOwnerId == request.auth.uid ||
+         request.auth.uid in getEvent(resource.data.eventId).data.participantIds ||
+         request.auth.uid in getEvent(resource.data.eventId).data.get('honoreeIds', [])
+       );
          
-       // Create/Update: use request.resource.data.eventId
-       allow create, update: if isAuth() && 
-         request.auth.uid in getEvent(request.resource.data.eventId).data.participantIds;
+       // Create: must be participant OR honoree (for wishlist sync)
+       allow create: if isAuth() && (
+         request.auth.uid in getEvent(request.resource.data.eventId).data.participantIds ||
+         request.auth.uid in getEvent(request.resource.data.eventId).data.get('honoreeIds', [])
+       );
+
+       // Update: Check owner first.
+       allow update: if isAuth() && (
+         resource.data.originalOwnerId == request.auth.uid ||
+         request.auth.uid in getEvent(request.resource.data.eventId).data.participantIds ||
+         request.auth.uid in getEvent(request.resource.data.eventId).data.get('honoreeIds', [])
+       );
          
-       // Delete: use resource.data.eventId
-       allow delete: if isAuth() && 
-         request.auth.uid in getEvent(resource.data.eventId).data.participantIds;
+       // Delete: Check owner first.
+       allow delete: if isAuth() && (
+         resource.data.originalOwnerId == request.auth.uid ||
+         request.auth.uid in getEvent(resource.data.eventId).data.participantIds ||
+         request.auth.uid in getEvent(resource.data.eventId).data.get('honoreeIds', [])
+       );
     }
     
     // Deudas

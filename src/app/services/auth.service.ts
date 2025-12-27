@@ -84,7 +84,7 @@ export class AuthService {
         await setDoc(userDocRef, { phoneNumber }, { merge: true });
     }
 
-    async updateProfile(uid: string, data: { displayName?: string; photoURL?: string }) {
+    async updateProfile(uid: string, data: { displayName?: string; photoURL?: string; phoneNumber?: string }) {
         const userDocRef = doc(this.firestore, 'users', uid);
         await setDoc(userDocRef, data, { merge: true });
         // Also update Auth profile if possible (optional but good for consistency)

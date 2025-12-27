@@ -17,14 +17,21 @@
         placeholder="Ej: Cumpleaños de Luis"></ion-input>
     </ion-item>
 
-    <ion-item button="true" id="open-date-modal">
-      <ion-label>Fecha</ion-label>
-      <ion-note slot="end">{{ date | date:'mediumDate' }}</ion-note>
+    <ion-item>
+      <ion-input label="Ubicación (Nombre)" labelPlacement="floating" [(ngModel)]="locationName"
+        placeholder="Ej: Restaurante La Plaza"></ion-input>
     </ion-item>
 
-    <ion-modal trigger="open-date-modal" [keepContentsMounted]="true">
-      <ion-datetime presentation="date" [(ngModel)]="date"></ion-datetime>
-    </ion-modal>
+    <ion-item button="true" id="open-date-modal">
+      <ion-label>Fecha y Hora</ion-label>
+      <ion-note slot="end">{{ date | date:'medium' }}</ion-note>
+    </ion-item>
+
+    <ion-popover trigger="open-date-modal" [keepContentsMounted]="true">
+      <ng-template>
+        <ion-datetime presentation="date-time" [(ngModel)]="date"></ion-datetime>
+      </ng-template>
+    </ion-popover>
 
     <ion-item>
       <ion-textarea label="Descripción" labelPlacement="floating" [(ngModel)]="description"
